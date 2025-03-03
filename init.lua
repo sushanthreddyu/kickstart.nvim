@@ -638,7 +638,7 @@ require('lazy').setup({
                 --    https://github.com/pmizio/typescript-tools.nvim
                 --
                 -- But for many setups, the LSP (`ts_ls`) will work just fine
-                ts_ls = {},
+                -- ts_ls = {},
                 --
 
                 lua_ls = {
@@ -763,7 +763,7 @@ require('lazy').setup({
             },
         },
         opts = {
-            notify_on_error = false,
+            notify_on_error = true,
             format_on_save = function(bufnr)
                 -- Disable "format_on_save lsp_fallback" for languages that don't
                 -- have a well standardized coding style. You can add additional
@@ -787,6 +787,7 @@ require('lazy').setup({
                 --
                 -- You can use 'stop_after_first' to run the first available formatter from the list
                 javascript = { 'prettierd', 'prettier', stop_after_first = true },
+                typescript = { 'prettierd', 'prettier', stop_after_first = true },
             },
         },
     },
@@ -1003,9 +1004,9 @@ require('lazy').setup({
     -- require 'kickstart.plugins.debug',
     -- require 'kickstart.plugins.indent_line',
     -- require 'kickstart.plugins.lint',
-    -- require 'kickstart.plugins.autopairs',
-    -- require 'kickstart.plugins.neo-tree',
-    -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+    require 'kickstart.plugins.autopairs',
+    require 'kickstart.plugins.neo-tree',
+    require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
     -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
     --    This is the easiest way to modularize your config.
