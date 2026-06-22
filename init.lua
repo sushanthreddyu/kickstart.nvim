@@ -229,10 +229,10 @@ do
   --  Use CTRL+<hjkl> to switch between windows
   --
   --  See `:help wincmd` for a list of all window commands
-  vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
-  vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
-  vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
-  vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+  -- vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
+  -- vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
+  -- vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
+  -- vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
   -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
   -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
@@ -461,7 +461,7 @@ do
 end
 
 -- ============================================================
--- SECTION 5: SEARCH & NAVIGATION
+-- SECTION 5a: SEARCH & NAVIGATION
 -- Telescope setup, keymaps, LSP picker mappings
 -- ============================================================
 do
@@ -595,6 +595,29 @@ do
   vim.keymap.set('n', '<leader>sn', function() builtin.find_files { cwd = vim.fn.stdpath 'config', follow = true } end, { desc = '[S]earch [N]eovim files' })
 end
 
+-- =====================================================================
+-- SECTION 5b: MULTIPLEXER INTEGRATION
+-- Seamless navigation between Tmux panes and Neovim splits
+-- =====================================================================
+do
+  -- 1. Tell vim.pack to track and load the plugin using Kickstart's 'gh' wrapper
+  vim.pack.add { gh 'alexghergh/nvim-tmux-navigation' }
+
+  -- 2. Configure the plugin safely
+  local nvim_tmux_nav = require 'nvim-tmux-navigation'
+
+  nvim_tmux_nav.setup {
+    disable_when_zoomed = true, -- Stops navigation when a tmux pane is maximized (Prefix + z)
+  }
+
+  -- 3. Map the keys using Kickstart's standard vim.keymap.set pattern
+  -- Note: These replace the standard <C-h/j/k/l> mappings from Section 2
+  vim.keymap.set('n', '<C-h>', nvim_tmux_nav.NvimTmuxNavigateLeft, { desc = 'Move to Left Pane/Split' })
+  vim.keymap.set('n', '<C-j>', nvim_tmux_nav.NvimTmuxNavigateDown, { desc = 'Move to Down Pane/Split' })
+  vim.keymap.set('n', '<C-k>', nvim_tmux_nav.NvimTmuxNavigateUp, { desc = 'Move to Up Pane/Split' })
+  vim.keymap.set('n', '<C-l>', nvim_tmux_nav.NvimTmuxNavigateRight, { desc = 'Move to Right Pane/Split' })
+end
+
 -- ============================================================
 -- SECTION 6: LSP
 -- LSP keymaps, server configuration, Mason tools installations
@@ -704,8 +727,6 @@ do
   ---@type table<string, vim.lsp.Config>
   local servers = {
     -- clangd = {},
-    -- gopls = {},
-    -- pyright = {},
     -- rust_analyzer = {},
     --
     -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -715,6 +736,22 @@ do
     -- ts_ls = {},
 
     stylua = {}, -- Used to format Lua code
+
+    -- Django & Python Setup
+    pyright = {},
+
+    -- Go Setup
+    gopls = {
+      settings = {
+        gopls = {
+          analyses = { unusedparams = true },
+          staticcheck = true,
+        },
+      },
+    },
+
+    -- Zig Setup
+    zls = {},
 
     -- Special Lua Config, as recommended by neovim help docs
     lua_ls = {
@@ -776,8 +813,13 @@ do
   --
   -- You can press `g?` for help in this menu.
   local ensure_installed = vim.tbl_keys(servers or {})
+
+  -- Filter out 'pyright' so Mason ignores it (since Homebrew manages it)
+  ensure_installed = vim.tbl_filter(function(server_name) return server_name ~= 'pyright' end, ensure_installed)
+
   vim.list_extend(ensure_installed, {
     -- You can add other tools here that you want Mason to install
+    'ruff', -- Replaces black and flake8 entirely
   })
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -800,8 +842,14 @@ do
     format_on_save = function(bufnr)
       -- You can specify filetypes to autoformat on save here:
       local enabled_filetypes = {
-        -- lua = true,
-        -- python = true,
+        lua = true,
+        python = true,
+        javascript = true,
+        typescript = true,
+        javascriptreact = true,
+        typescriptreact = true,
+        go = true,
+        zig = true,
       }
       if enabled_filetypes[vim.bo[bufnr].filetype] then
         return { timeout_ms = 500 }
@@ -816,7 +864,7 @@ do
     formatters_by_ft = {
       -- rust = { 'rustfmt' },
       -- Conform can also run multiple formatters sequentially
-      -- python = { "isort", "black" },
+      python = { 'ruff_organize_imports', 'ruff_format' },
       --
       -- You can use 'stop_after_first' to run the first available formatter from the list
       javascript = { 'prettierd', 'prettier', stop_after_first = true },
